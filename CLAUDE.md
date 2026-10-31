@@ -47,8 +47,9 @@ Flat folder, no subdirectories (apart from a local `.codex/` tool config).
 
 ## Git
 
-Not yet a git repo — about to be pushed to GitHub. Set up **before the first commit**:
+Public GitHub repo (`origin` = `shivamchudasama/KiaSorentoKeyCover_3DPrinting`), single branch `main`.
 
-- `.gitattributes` routing `*.stl`, `*.3mf`, `*.pdf` to **Git LFS**, plus `*.glb` (binary previews, 0.2–0.5 MB each). `*.png` stays an ordinary blob by policy.
-- About 21 MB of STL/GLB in total, against the free LFS tier of 1 GB storage / 1 GB monthly bandwidth. Re-exporting every joint's parts and GLBs writes another ~18 MB into LFS each time, so commit exports when a design settles, not on every experiment.
-- `.codex/` is local tool config and should be git-ignored.
+- `.gitattributes` routes `*.stl`, `*.3mf`, `*.pdf` and `*.glb` to **Git LFS**. `*.png` stays an ordinary blob by policy. Add any new binary extension there **before** its first commit.
+- About 22 MB of STL/GLB is in LFS, against the free tier of 1 GB storage / 1 GB monthly bandwidth. Re-exporting every joint's parts and GLBs writes another ~18 MB into LFS each time, so commit exports when a design settles, not on every experiment.
+- `.gitignore` excludes `.codex/` (local tool config).
+- README still has a TODO crediting the original base-case model and its licence.
