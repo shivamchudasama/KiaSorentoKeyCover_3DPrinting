@@ -23,7 +23,7 @@ Each design has its own folder; the shared source lives in `Original/`.
 | Folder | Contents |
 |---|---|
 | `Snap/`, `Hinge/`, `Magnet/` | `<joint>_{upper,lower,coupon}.stl`: upper half (with logo), lower half, and small test pieces for that joint. `<joint>_assembly.glb`: coloured 3D preview of the closed case (magnets and pin included), which opens in Windows 3D Viewer, Blender, or any glTF viewer |
-| `Snap/`, `Hinge/` | `<joint>_ridge_*`: an experimental variant with grip ridges for pulling the halves apart |
+| `Snap/`, `Hinge/`, `Magnet/` | `<joint>_ridge_*`: an experimental variant with grip ridges for pulling the halves apart: round the top arc and along the open end (the hinge, pinned at the top arc, has only the open-end pair) |
 | `Split/` | `{upper,lower}_flat.stl`: an earlier plain split with no joint (and no logo) |
 | `Original/` | `split.scad`: the parametric source for every design. `split_grip_ridge.scad`: its grip-ridge copy. `from_openscad.stl`: the unsplit base case the source builds on. `B3D_Labs.svg`: the logo debossed into the upper half. `digital_only.*`: the earlier step that removed the mechanical-key slot |
 

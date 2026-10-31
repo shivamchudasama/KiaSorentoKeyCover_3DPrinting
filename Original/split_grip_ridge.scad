@@ -30,10 +30,12 @@
 //           pair (glued, flush with the seam face), plus the press-fit tongue
 //           without ribs as a shear locator.
 //
-// Grip:     (this copy, snap and hinge) two pairs of ridges, one ridge per
-//           half in each pair: round the top arc, out towards that half's
-//           outer face, and along the open end on the face plates' end faces.
-//           Their flat seam-side faces take the pull when opening the case.
+// Grip:     (this copy, snap, hinge and magnet) two pairs of ridges, one
+//           ridge per half in each pair: round the top arc, out towards that
+//           half's outer face, and along the open end on the face plates' end
+//           faces. Their flat seam-side faces take the pull when opening the
+//           case. The hinge case is pinned at the top arc, so it gets only the
+//           end pair.
 //
 // Logo:     B3D_Labs.svg debossed into the upper half's flat outer face.
 //
@@ -93,8 +95,8 @@ notch_h = 1.0;
 notch_d = 0.8;
 
 /* [Grip Ridges] */
-// Ridge pair round the top arc, for pulling the halves apart. On the hinge
-// case that end is pinned, so this pair only helps the snap case open.
+// Ridge pair round the top arc, for pulling the halves apart (snap and magnet;
+// the hinge case is pinned there and never gets it)
 grip_ridge_top = true;
 // Ridge pair along the open end (Y = 0)
 grip_ridge_end = true;
@@ -608,9 +610,9 @@ module grip_ridge_end() {
 }
 
 // The upper half's ridges; mirror([0, 0, 1]) gives the lower half's
-module grip_ridges() {
-    if (grip_ridge_top) grip_ridge_top();
-    if (grip_ridge_end) grip_ridge_end();
+module grip_ridges(top = grip_ridge_top, end = grip_ridge_end) {
+    if (top) grip_ridge_top();
+    if (end) grip_ridge_end();
 }
 
 // -----------------------------------------------------------------------------
@@ -767,7 +769,7 @@ module lower_half_hinge() {
                 for (l = hinge_latches) latch_pad(l, hinge_latch_swing);
                 below_parting();
             }
-            mirror([0, 0, 1]) grip_ridges();
+            mirror([0, 0, 1]) grip_ridges(top = false);
         }
         knuckle_clearance(1);
         pin_hole(tip_up = true);
@@ -788,6 +790,7 @@ module lower_half_magnet() {
                 lug_zones();
             }
             for (L = mag_lugs) lug(L, -1);
+            mirror([0, 0, 1]) grip_ridges();
         }
         pry_notch();
         for (L = mag_lugs) {
@@ -869,7 +872,7 @@ module upper_half_hinge() {
         union() {
             upper_with_latches(hinge_latches, hinge_latch_swing);
             knuckle(1, 1);
-            grip_ridges();
+            grip_ridges(top = false);
         }
         knuckle_clearance(0);
         knuckle_clearance(2);
@@ -886,6 +889,7 @@ module upper_half_magnet() {
                 above_parting();
             }
             for (L = mag_lugs) lug(L, 1);
+            grip_ridges();
         }
         difference() {
             slot(mag_tongue_clearance);

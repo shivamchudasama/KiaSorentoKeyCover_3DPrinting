@@ -18,12 +18,12 @@ One folder for the shared source and one per design (plus a local `.codex/` tool
 
 - `Original/` — everything shared:
   - `split.scad` — **the master source**. `joint_style` = `press_fit` (legacy, too loose in practice) / `snap` / `hinge` / `magnet` / `flat`; `part` = `assembly` / `exploded` / `upper` / `lower` / `coupon`. Coupons are joint-specific.
-  - `split_grip_ridge.scad` — **exploratory copy** of the master that adds grip ridges to the snap and hinge halves: one pair round the top arc, one along the open end (`grip_ridge_top` / `grip_ridge_end`). Changes to `split.scad` must be carried into it by hand.
+  - `split_grip_ridge.scad` — **exploratory copy** of the master that adds grip ridges to the snap, hinge and magnet halves: one pair round the top arc, one along the open end (`grip_ridge_top` / `grip_ridge_end`). The hinge is pinned at the top arc, so it gets only the end pair (`grip_ridges(top = false)`). Changes to `split.scad` must be carried into it by hand.
   - `from_openscad.stl` — unsplit base case that both masters `import()`. Geometrically identical to `digital_only.stl`.
   - `digital_only.scad` — earlier step that cut the mechanical-key slot off the original case. Leave it as is; its input (`kia_sorento_key_case_raw.stl`) is deliberately not part of the repo.
   - `B3D_Labs.svg` — logo debossed into the upper face.
-- `Snap/`, `Hinge/`, `Magnet/`, `Split/` — one folder per design, each with a **wrapper** `.scad` (`snap.scad`, `hinge.scad`, `magnet.scad`, `flat.scad`; `snap_ridge.scad` / `hinge_ridge.scad` for the grip-ridge master) that `include`s `../Original/<master>.scad`, then reassigns `part` and `joint_style` (last assignment wins). Wrappers hold no parameters — edit the master. Relative paths in the master's `import()`s resolve against `Original/`.
-  - `<joint>_{upper,lower,coupon}.stl` — exports, in assembled position (the upper half is flipped in the slicer). `<joint>_ridge_{upper,lower}.stl` in `Snap/` and `Hinge/`.
+- `Snap/`, `Hinge/`, `Magnet/`, `Split/` — one folder per design, each with a **wrapper** `.scad` (`snap.scad`, `hinge.scad`, `magnet.scad`, `flat.scad`; `snap_ridge.scad` / `hinge_ridge.scad` / `magnet_ridge.scad` for the grip-ridge master) that `include`s `../Original/<master>.scad`, then reassigns `part` and `joint_style` (last assignment wins). Wrappers hold no parameters — edit the master. Relative paths in the master's `import()`s resolve against `Original/`.
+  - `<joint>_{upper,lower,coupon}.stl` — exports, in assembled position (the upper half is flipped in the slicer). `<joint>_ridge_{upper,lower}.stl` in `Snap/`, `Hinge/` and `Magnet/`.
   - `<joint>_assembly.glb`, `<joint>_ridge_assembly.glb` — coloured previews built with trimesh from the exported STLs, plus visual-only magnets (5 × 2 mm) and hinge pin. Y-up, metres. No script is checked in; regenerate them whenever the STLs change (easiest: load the old GLB, swap the upper/lower meshes, keep materials, node transforms and pin).
   - `Split/{upper,lower}_flat.stl` — old plain-split exports: binary STL, no logo. `flat.scad` reproduces them geometrically only with `-D logo=false`.
 
