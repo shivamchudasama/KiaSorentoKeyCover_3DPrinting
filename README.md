@@ -8,11 +8,11 @@ A 3D-printable two-part case for the Kia Sorento digital key fob, designed in Op
 
 | Joint | How it holds | How to open | Extra parts |
 |---|---|---|---|
-| **Snap** | 4 flexible arms hang from the upper half through the side windows and hook into notches in the lower rim | Lever each arm out with a fingernail (a slot sits beside each arm) | none |
-| **Hinge** | Pin hinge at the closed (top) end, plus 2 snap latches near the open end | Release the 2 latches and swing open like a book | 1.75 mm filament offcut, ~11 mm |
+| **Snap** | 4 flexible arms hang from the upper half on the solid wall sections (the side windows stay clear for the fob's buttons) and hook into notches in the lower rim. The wall is thickened into a small pad around each arm, so the arms are hidden | Pull the halves apart (60° hooks) | none |
+| **Hinge** | Pin hinge at the closed (top) end, plus 2 snap latches near the open end, in the same wall pads | Pull the open end apart and swing open like a book | 1.75 mm filament offcut, ~11 mm |
 | **Magnet** | 4 external lugs at the seam, each holding a pair of magnets; a small tongue around the seam stops sliding | Pull apart | 8× 5 × 2 mm neodymium magnets, CA glue |
 
-The magnet lugs stick out about 5.5 mm from the case outline. The case walls are at most ~2 mm thick, so a 5 mm magnet can't fit inside them. The hinge adds a bump of about 4.5 mm at the top end.
+The magnet lugs stick out about 5.5 mm from the case outline. The case walls are at most ~2 mm thick, so a 5 mm magnet can't fit inside them. The hinge adds a bump of about 4.5 mm at the top end. The latch pads stand about 1.1–2.1 mm proud of the wall.
 
 An earlier **press-fit** joint (tongue and slot with crush ribs) is still in the source as `joint_style = "press_fit"`. It relies on friction and came out too loose in practice, so it isn't recommended.
 
@@ -39,7 +39,7 @@ The other files (`kia_sorento_key_case_digital_only.*`, `kia_sorento_key_case_{u
 
   | Coupon | Variants | What to pick |
   |---|---|---|
-  | Snap | Hook retaining-face angle **90 / 60 / 45°** (engraved) | 90° locks until the arm is levered out; 60° and 45° pull apart by hand. Pick the one that holds but still opens comfortably |
+  | Snap | Hook retaining-face angle **90 / 60 / 45°** (engraved) | 60° and 45° pull apart by hand; pick the one that holds but still opens comfortably. 90° only opens by levering the arm out through the coupon's nail slot; on the case the arms are enclosed, so 90° would never open |
   | Hinge | Pin hole **1.80 / 1.85 / 1.90 mm** (engraved) | The tightest hole your 1.75 mm filament still turns in freely |
   | Magnet | Pocket **5.10 / 5.20 / 5.30 mm** (engraved `10` / `20` / `30`) | The tightest pocket the magnet still presses into |
 
@@ -47,7 +47,7 @@ The other files (`kia_sorento_key_case_digital_only.*`, `kia_sorento_key_case_{u
 
 ## Assembly
 
-**Snap:** Put the fob in the lower half and press the upper half straight down until all four arms click. The hooks slide lightly along the fob's sides on the way in. To open, lever each arm outward with a fingernail and lift.
+**Snap:** Put the fob in the lower half and press the upper half straight down until all four arms click. The hooks slide lightly along the fob's sides on the way in. To open, pull the halves apart.
 
 **Hinge:** Line up the knuckles and push a 1.75 mm filament offcut through. Melt each end slightly with a soldering iron or lighter so it can't slide out. Close the case on the fob until both latches click.
 

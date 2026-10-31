@@ -18,12 +18,14 @@
 //           - Upper half: matching slot (tongue_w + clearance wide, slightly
 //             deeper than the tongue) so the halves seat on the outer shoulder.
 //           - Pry notch in the lower half's outer shoulder for opening.
-// snap      Four cantilever arms hang from the upper rim through the side
-//           windows; each hook clicks into a notch in the lower rim. At
-//           hook_return_angle = 90 the lock is positive: lever each arm out
-//           with a fingernail (nail slot beside it) to open.
+// snap      Four cantilever arms hang from the upper rim on the wall posts
+//           (the side windows are left clear for the fob's buttons); each hook
+//           clicks into a notch in the lower rim. The wall is thickened
+//           outward around each latch (both halves) so the arm runs in a
+//           pocket that stays closed to the outside. The halves pull apart by
+//           hand (hook_return_angle < 90).
 // hinge     Pin hinge at the top-arc apex (pin = 1.75 mm filament offcut) and
-//           two snap latches near the open end.
+//           two snap latches on the posts near the open end.
 // magnet    Four external lugs at the seam, each holding a 5 x 2 mm magnet
 //           pair (glued, flush with the seam face), plus the press-fit tongue
 //           without ribs as a shear locator.
@@ -111,13 +113,22 @@ arm_root_z = 6;
 hook_d = 0.6;
 // Flat land between the lead-in and the retaining face (mm)
 hook_land = 0.2;
-// Retaining face: 90 = positive lock (lever the arm out to open), 45-60 = pulls apart by hand (deg)
-hook_return_angle = 90;
+// Retaining face: 45-60 = pulls apart by hand. The pockets are closed to the
+// outside, so 90 (positive lock) could only be opened by breaking an arm (deg)
+hook_return_angle = 60;
 // Side clearance between arm and pocket (mm)
 latch_clearance = 0.15;
 // Vertical play between hook and notch (mm)
 latch_z_play = 0.05;
-// Fingernail slot beside each arm, for levering it out; 0 = none (mm)
+// Room outward of the arm for it to flex over the hook (mm)
+arm_flex = hook_d + 0.1;
+// Outer skin left over the pocket; the wall is thickened outward to fit it (mm)
+latch_skin = 0.8;
+// Pad wall beside the pocket at each end (mm)
+latch_side = 1.0;
+// The arm is free of the upper wall up to this Z (the side windows' top) (mm)
+arm_free_z = 4.2;
+// Fingernail slot beside the coupon arm, for levering it out; 0 = none (mm)
 nail_w = 1.2;
 
 /* [Hinge] */
@@ -186,12 +197,23 @@ rib_points = [
     [40.35, 64.36], [43.17, 58.33]                                       // right upper post
 ];
 
-// Snap latches as [side, y, nail]: side -1 = left wall (X ~ -1), +1 = right
-// wall (X ~ 43); nail = side of the arm (-Y / +Y) with the nail slot. An arm
-// can slide into its nail slot, so pair opposite slots to lock Y.
-snap_latches = [[-1, 24, 1], [-1, 41, -1], [1, 37, 1], [1, 50, -1]];
-// The hinge locates Y; nail slots away from the swing clearance
-hinge_latches = [[-1, 22, 1], [1, 36, 1]];
+// Snap latches as [x, y, outward normal angle] or [x, y, angle, arm width]: a
+// point on the cavity line and its wall normal. The side windows hold the
+// fob's buttons, so every latch, pad included, sits on a wall post (Z = 0
+// slice: left post Y 0-16.3, right lower post Y 0-30, top-arc post from Y 48.9
+// on the left round to X 28, right upper post Y 57.4-64.6). Read from the
+// STL; regenerate if the base model changes.
+snap_latches = [
+    [-0.16,  8.00, 180],        // A: left post
+    [42.61, 22.15,  -4],        // B: right lower post, straight run
+    [10.18, 69.54, 138],        // C: top-arc post, top-left diagonal
+    [41.58, 60.97,  23, 4]      // D: right upper post, too short for latch_w
+];
+// On Y-aligned posts only: the swing pocket widens towards -Y
+hinge_latches = [
+    [-0.16,  8.00, 180],        // left post
+    [42.54, 21.16,  -4]         // right lower post, straight run
+];
 
 // Magnet lugs as [x, y, outward normal angle]: magnet centres 0.5 mm + pocket
 // radius off the cavity along the wall normal, on straight runs of the posts.
@@ -205,6 +227,9 @@ mag_lugs = [
 
 // Z at which the side windows are closed, used to read the cavity outline
 ring_probe_z = 5;
+
+// Z of the flat outer faces (top = +face_z, bottom = -face_z), read from the STL
+face_z = 10.302;
 
 // Set true inside the coupons: latch strips use a straight wall along X
 $coupon = false;
@@ -392,74 +417,124 @@ module pry_notch() {
 // the wall runs along X with its outer face at Y = 0 and the cavity line at
 // Y = coupon_latch_wall, and the latch is centred on X = 0.
 //
-// Z layout (assembled): arm from the upper rim down to arm_bottom; hook =
-// 45 deg lead-in, land, retaining face at hook_top; lower rim pocket down to
-// arm_bottom - 0.2 with a notch behind the hook.
+// Z layout (assembled): arm from the upper rim down to arm_bottom, free of the
+// upper wall below arm_free_z; hook = 45 deg lead-in, land, retaining face at
+// hook_top; lower rim pocket down to arm_bottom - 0.2 with a notch behind the
+// hook. On the case the posts are too thin to hold the pocket, so both halves
+// get a pad that thickens the wall outward to pad_t; the pocket stops
+// latch_skin short of its outer face.
 
 hook_top = arm_bottom + hook_d + hook_land;
 pocket_bottom = arm_bottom - 0.2;
+// Outer face of the pocket and of the pad, from the cavity line
+pocket_outer = arm_gap + arm_t + arm_flex;
+pad_t = pocket_outer + latch_skin;
+// The pad is full thickness for |Z| <= pad_z (just past the fob cavity), then
+// chamfered 45 deg into the top and bottom faces
+pad_z = 8.7;
 
 // Height of the retaining face for a given angle (0 = flat, positive lock)
 function return_h(ang) = ang >= 90 ? 0 : hook_d / tan(ang);
 
-// Box around latch l = [side, y, nail], w wide along the wall, moved `shift` along it
-module latch_box_2d(l, w, shift = 0) {
+// Arm width of latch l
+function latch_width(l) = len(l) > 3 ? l[3] : latch_w;
+
+// Pocket shift along the wall that widens it by `swing` towards -Y only; the
+// wall tangent's Y component is cos(angle)
+function swing_shift(l, swing) = -swing / 2 * ($coupon || cos(l[2]) >= 0 ? 1 : -1);
+
+// Latch l = [x, y, angle(, w)]. Its features are built in a local frame
+// (origin on the cavity line, +X = outward normal, +Y = counter-clockwise
+// along the wall) and placed once in 3D: a box rotated in 2D gets its corners
+// snapped differently in every extruded slice and leaves non-manifold slivers.
+module latch_frame(l) {
     if ($coupon)
-        translate([shift - w / 2, -20]) square([w, 40]);
+        children();
     else
-        translate([l[0] < 0 ? -10 : 34, l[1] + shift - w / 2]) square([20, w]);
+        translate([l[0], l[1], 0]) rotate([0, 0, l[2]]) children();
 }
 
+// Strip in the latch frame, w wide along the wall, moved `shift` along it
 module latch_strip_2d(l, a, b, w, shift = 0) {
     intersection() {
         if ($coupon)
             translate([-50, coupon_latch_wall - b]) square([100, b - a]);
         else
-            difference() {
-                offset(delta = b) cavity_2d();
-                offset(delta = a) cavity_2d();
-            }
-        latch_box_2d(l, w, shift);
+            rotate(-l[2]) translate([-l[0], -l[1]])
+                difference() {
+                    offset(delta = b) cavity_2d();
+                    offset(delta = a) cavity_2d();
+                }
+        if ($coupon)
+            translate([shift - w / 2, -20]) square([w, 40]);
+        else
+            translate([-10, shift - w / 2]) square([20, w]);
     }
 }
 
 module hook_2d(l) {
-    latch_strip_2d(l, arm_gap - hook_d + $inset, arm_gap + 0.01, latch_w);
+    latch_strip_2d(l, arm_gap - hook_d + $inset, arm_gap + 0.01, latch_width(l));
 }
 
 // Arm with hook, added to the upper half
-module latch_arm(l, ang = hook_return_angle) {
+module latch_arm(l, ang = hook_return_angle) latch_frame(l) {
+    w = latch_width(l);
     translate([0, 0, arm_bottom])
         linear_extrude(height = arm_root_z - arm_bottom)
-            latch_strip_2d(l, arm_gap, arm_gap + arm_t, latch_w);
+            latch_strip_2d(l, arm_gap, arm_gap + arm_t, w);
     // Outer face chamfered 45 deg into the rim
     ramp(arm_root_z, arm_t, 0, arm_t)
-        latch_strip_2d(l, arm_gap, arm_gap + arm_t - $inset, latch_w);
+        latch_strip_2d(l, arm_gap, arm_gap + arm_t - $inset, w);
     ramp(arm_bottom, hook_d, hook_d, 0) hook_2d(l);
     translate([0, 0, arm_bottom + hook_d])
         linear_extrude(height = hook_land + 0.001) let($inset = 0) hook_2d(l);
     ramp(hook_top, return_h(ang), 0, hook_d) hook_2d(l);
 }
 
-// Pocket, hook notch and nail slot, cut from the lower half. `swing` widens
-// the pocket towards -Y (the open end) for arms that close on a hinge arc.
-module latch_pocket(l, swing = 0, ang = hook_return_angle) {
-    w = latch_w + 2 * latch_clearance + swing;
-    s = -swing / 2;
+// Wall pad around a latch, both halves (clip to the half). It starts 0.2 mm
+// inside the wall (posts are >= 0.68 mm thick): a face on the cavity line
+// would nearly coincide with the wall's inner face and leave slivers. Beyond
+// |Z| = pad_z it reaches 2 mm into the face plates so the chamfer meets the
+// rounded edge.
+module latch_pad(l, swing = 0) latch_frame(l) {
+    w = latch_width(l) + 2 * (latch_clearance + latch_side) + swing;
+    s = swing_shift(l, swing);
+    translate([0, 0, -pad_z])
+        linear_extrude(height = 2 * pad_z)
+            latch_strip_2d(l, 0.2, pad_t, w, s);
+    for (m = [0, 1]) mirror([0, 0, m])
+        ramp(pad_z - 0.001, face_z - pad_z + 0.002, 0, face_z - pad_z, steps = 8)
+            latch_strip_2d(l, -2, pad_t - $inset, w, s);
+}
+
+// Slot freeing the arm from the upper wall between the seam and arm_free_z
+module latch_slot(l) latch_frame(l) {
+    translate([0, 0, -0.01])
+        linear_extrude(height = arm_free_z + 0.01)
+            latch_strip_2d(l, arm_gap - latch_clearance, pocket_outer,
+                           latch_width(l) + 2 * latch_clearance);
+}
+
+// Pocket and hook notch, cut from the lower half. `swing` widens the pocket
+// towards -Y (the open end) for arms that close on a hinge arc. The coupon's
+// pocket is open to the outside, with a nail slot for levering the arm out.
+module latch_pocket(l, swing = 0, ang = hook_return_angle) latch_frame(l) {
+    w = latch_width(l) + 2 * latch_clearance + swing;
+    s = swing_shift(l, swing);
     notch_top = hook_top + latch_z_play;
     translate([0, 0, pocket_bottom])
         linear_extrude(height = -pocket_bottom + 0.01)
-            latch_strip_2d(l, arm_gap - latch_clearance, 5, w, s);
+            latch_strip_2d(l, arm_gap - latch_clearance, $coupon ? 5 : pocket_outer, w, s);
     translate([0, 0, pocket_bottom])
         linear_extrude(height = notch_top - pocket_bottom)
             latch_strip_2d(l, arm_gap - hook_d - 0.1, arm_gap, w, s);
     ramp(notch_top, return_h(ang), 0, hook_d + 0.1)
         latch_strip_2d(l, arm_gap - hook_d - 0.1 + $inset, arm_gap, w, s);
-    if (nail_w > 0)
+    if ($coupon && nail_w > 0)
         translate([0, 0, pocket_bottom])
             linear_extrude(height = -pocket_bottom + 0.01)
                 latch_strip_2d(l, arm_gap - hook_d - 0.15, 5, nail_w + 0.2,
-                               s + (l[2] < 0 ? -1 : 1) * ((w + nail_w) / 2 - 0.1));
+                               s + (w + nail_w) / 2 - 0.1);
 }
 
 // -----------------------------------------------------------------------------
@@ -594,7 +669,13 @@ module lower_half_press_fit() {
 
 module lower_half_snap() {
     difference() {
-        lower_half_flat();
+        union() {
+            lower_half_flat();
+            intersection() {
+                for (l = snap_latches) latch_pad(l);
+                below_parting();
+            }
+        }
         for (l = snap_latches) latch_pocket(l);
     }
 }
@@ -605,6 +686,10 @@ module lower_half_hinge() {
             lower_half_flat();
             knuckle(0, -1);
             knuckle(2, -1);
+            intersection() {
+                for (l = hinge_latches) latch_pad(l, hinge_latch_swing);
+                below_parting();
+            }
         }
         knuckle_clearance(1);
         pin_hole(tip_up = true);
@@ -673,26 +758,38 @@ module upper_half_press_fit() {
 
 // Logo engraved into the flat outer face (Z = top of the model)
 module logo_cut() {
-    top_z = 10.302;
-    translate([logo_center[0], logo_center[1], top_z - logo_depth])
+    translate([logo_center[0], logo_center[1], face_z - logo_depth])
         linear_extrude(height = logo_depth + 0.01)
             resize([0, logo_height], auto = true)
                 import(logo_file, center = true);
 }
 
-module upper_half_snap() {
+// Upper half with wall pads, arm slots and arms for latches ls
+module upper_with_latches(ls, swing = 0) {
     union() {
-        upper_half_flat();
-        for (l = snap_latches) latch_arm(l);
+        difference() {
+            union() {
+                upper_half_flat();
+                intersection() {
+                    for (l = ls) latch_pad(l, swing);
+                    above_parting();
+                }
+            }
+            for (l = ls) latch_slot(l);
+        }
+        for (l = ls) latch_arm(l);
     }
+}
+
+module upper_half_snap() {
+    upper_with_latches(snap_latches);
 }
 
 module upper_half_hinge() {
     difference() {
         union() {
-            upper_half_flat();
+            upper_with_latches(hinge_latches, hinge_latch_swing);
             knuckle(1, 1);
-            for (l = hinge_latches) latch_arm(l);
         }
         knuckle_clearance(0);
         knuckle_clearance(2);
@@ -809,7 +906,7 @@ module coupon_snap_lower(ang) {
             translate([-7, 0, -9]) cube([14, 6, 4.8]);
             for (x = [-7, 5]) translate([x, 0, -4.21]) cube([2, 1.7, 4.21]);
         }
-        let($coupon = true) latch_pocket([0, 0, 1], 0, ang);
+        let($coupon = true) latch_pocket([0, 0, 0], 0, ang);
         translate([0, 4.2, -4.6])
             linear_extrude(height = 1)
                 text(str(ang), size = 1.8, halign = "center", valign = "center");
@@ -822,7 +919,7 @@ module coupon_snap_upper(ang) {
     union() {
         translate([-7, 0, 4.2]) cube([14, 6, 4.8]);
         for (x = [-7, 5]) translate([x, 0, 0]) cube([2, 1.7, 4.21]);
-        let($coupon = true) latch_arm([0, 0, 1], ang);
+        let($coupon = true) latch_arm([0, 0, 0], ang);
     }
 }
 
