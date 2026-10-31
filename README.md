@@ -18,17 +18,16 @@ An earlier **press-fit** joint (tongue and slot with crush ribs) is still in the
 
 ## Files
 
-| File | What it is |
-|---|---|
-| `kia_sorento_key_case_{snap,hinge,magnet}_upper.stl` | Upper half (with logo) |
-| `kia_sorento_key_case_{snap,hinge,magnet}_lower.stl` | Lower half |
-| `kia_sorento_key_case_{snap,hinge,magnet}_coupon.stl` | Small test pieces for that joint |
-| `kia_sorento_key_case_{snap,hinge,magnet}_assembly.glb` | Coloured 3D preview of the closed case (magnets and pin included). Opens in Windows 3D Viewer, Blender, or any glTF viewer |
-| `kia_sorento_key_case_split.scad` | Parametric source for all of the above |
-| `kia_sorento_key_case_from_openscad.stl` | Unsplit base case the source builds on |
-| `B3D_Labs.svg` | Logo debossed into the upper half |
+Each design has its own folder; the shared source lives in `Original/`.
 
-The other files (`kia_sorento_key_case_digital_only.*`, `kia_sorento_key_case_{upper,lower}_flat.stl`) are earlier steps: the base case with the mechanical-key slot removed, and a plain split with no joint.
+| Folder | Contents |
+|---|---|
+| `Snap/`, `Hinge/`, `Magnet/` | `<joint>_{upper,lower,coupon}.stl`: upper half (with logo), lower half, and small test pieces for that joint. `<joint>_assembly.glb`: coloured 3D preview of the closed case (magnets and pin included), which opens in Windows 3D Viewer, Blender, or any glTF viewer |
+| `Snap/`, `Hinge/` | `<joint>_ridge_*`: an experimental variant with grip ridges for pulling the halves apart |
+| `Split/` | `{upper,lower}_flat.stl`: an earlier plain split with no joint (and no logo) |
+| `Original/` | `split.scad`: the parametric source for every design. `split_grip_ridge.scad`: its grip-ridge copy. `from_openscad.stl`: the unsplit base case the source builds on. `B3D_Labs.svg`: the logo debossed into the upper half. `digital_only.*`: the earlier step that removed the mechanical-key slot |
+
+Each design folder also has a small `.scad` file (for example `Snap/snap.scad`) that includes the master source from `Original/` and fixes `joint_style`. Open it to work on that design alone. Every parameter still lives in the master, so a change there reaches all designs.
 
 ## Printing
 
@@ -59,7 +58,7 @@ The other files (`kia_sorento_key_case_digital_only.*`, `kia_sorento_key_case_{u
 
 ## Customising
 
-Open `kia_sorento_key_case_split.scad` in [OpenSCAD](https://openscad.org/) (a recent nightly build; the manifold backend renders each part in about 2 s). The Customizer groups every setting:
+Open `Original/split.scad` in [OpenSCAD](https://openscad.org/) (a recent nightly build; the manifold backend renders each part in about 2 s). The Customizer groups every setting:
 
 - **Render Options:** `part` = `assembly` / `exploded` / `upper` / `lower` / `coupon`, and `joint_style`.
 - **Snap Latches, Hinge, Magnets:** dimensions and clearances for each joint.
@@ -68,7 +67,9 @@ Open `kia_sorento_key_case_split.scad` in [OpenSCAD](https://openscad.org/) (a r
 Command-line export example:
 
 ```sh
-openscad --backend=manifold -D 'joint_style="snap"' -D 'part="upper"' -o upper.stl kia_sorento_key_case_split.scad
+openscad --backend=manifold -D 'joint_style="snap"' -D 'part="upper"' -o upper.stl Original/split.scad
+# or, through the design's wrapper:
+openscad --backend=manifold -D 'part="upper"' -o Snap/snap_upper.stl Snap/snap.scad
 ```
 
 Export as ASCII STL (the default). Binary STL rounds coordinates to 32-bit floats and introduces mesh errors in these parts.

@@ -30,11 +30,6 @@
 //           pair (glued, flush with the seam face), plus the press-fit tongue
 //           without ribs as a shear locator.
 //
-// Grip:     (this copy, snap and hinge) two pairs of ridges, one ridge per
-//           half in each pair: round the top arc, out towards that half's
-//           outer face, and along the open end on the face plates' end faces.
-//           Their flat seam-side faces take the pull when opening the case.
-//
 // Logo:     B3D_Labs.svg debossed into the upper half's flat outer face.
 //
 // Printing: Print both halves outer face down (flip the upper half 180 deg in
@@ -91,32 +86,6 @@ notch_x = 21;
 notch_w = 3.0;
 notch_h = 1.0;
 notch_d = 0.8;
-
-/* [Grip Ridges] */
-// Ridge pair round the top arc, for pulling the halves apart. On the hinge
-// case that end is pinned, so this pair only helps the snap case open.
-grip_ridge_top = true;
-// Ridge pair along the open end (Y = 0)
-grip_ridge_end = true;
-// Top ridge span along X, about the apex (X 21.3); latch C's pad ends at X 12.8 (mm)
-ridge_x = [13.5, 29];
-// |Z| of the top ridge's flat grip face, which faces the seam. Above |Z| 4.2
-// the wall is a closed ring, so the ridge can't reach a side window (mm)
-ridge_z = 5.5;
-// End ridge span along X; the plates' end faces run X ~0-32 (mm)
-ridge_end_x = [4, 28];
-// |Z| of the fob slot's edge at the open end: the face plates' end faces
-// (Y = 0) run outward from here (to 10.3 on the upper, rounding off below
-// -7.4 on the lower). Read from the STL (mm)
-slot_edge_z = 5.6;
-// End ridge's grip face sits this far outside the slot edge, a fingernail gap
-// that also clears the fob's end (mm)
-ridge_end_gap = 0.5;
-// How far a ridge stands out from the wall or end face (mm)
-ridge_p = 2.0;
-// Height of the full-depth band; beyond it a ridge tapers back at 45 deg.
-// The top ridge ends where the wall starts rounding into the face (|Z| ~8.6) (mm)
-ridge_h = 1.0;
 
 /* [Logo] */
 // Deboss the B3D Labs logo into the upper half's outer face
@@ -269,7 +238,7 @@ $coupon = false;
 // Base 3D Model
 // -----------------------------------------------------------------------------
 module base_model() {
-    import("kia_sorento_key_case_from_openscad.stl", convexity=10);
+    import("from_openscad.stl", convexity=10);
 }
 
 // 2D slice profile at the Z = 0 parting plane (the four wall posts)
@@ -569,51 +538,6 @@ module latch_pocket(l, swing = 0, ang = hook_return_angle) latch_frame(l) {
 }
 
 // -----------------------------------------------------------------------------
-// Grip ridges
-// -----------------------------------------------------------------------------
-// Ridge footprint: a band round the outer outline, starting 0.3 mm inside the
-// wall so it merges without coincident faces, cut to ridge_x
-module ridge_2d(inset = 0) {
-    intersection() {
-        difference() {
-            offset(delta = ridge_p - inset) outer_2d();
-            offset(delta = -0.3) outer_2d();
-        }
-        translate([ridge_x[0], 60]) square([ridge_x[1] - ridge_x[0], 40]);
-    }
-}
-
-// Upper half's top ridge: flat grip face at Z = ridge_z (facing the seam), full
-// depth for ridge_h, then 45 deg back to the wall so it prints face down
-// without supports
-module grip_ridge_top() {
-    translate([0, 0, ridge_z])
-        linear_extrude(height = ridge_h + 0.001) ridge_2d();
-    ramp(ridge_z + ridge_h, ridge_p, 0, ridge_p, steps = 8) ridge_2d($inset);
-}
-
-// Upper half's end ridge, a profile in (Y, Z) extruded along X, same shape.
-// Its inner side reaches 1.5 mm into the plate, clear of the slot's sloped
-// face and with no edge on the end face, so the lower half's chamfer runs into
-// the rounded bottom edge instead of leaving a notch there.
-module grip_ridge_end() {
-    z0 = slot_edge_z + ridge_end_gap;
-    translate([ridge_end_x[0], 0, 0]) rotate([90, 0, 90])
-        linear_extrude(height = ridge_end_x[1] - ridge_end_x[0])
-            polygon([[0.3, z0], [-ridge_p, z0],
-                     [-ridge_p, z0 + ridge_h],
-                     [0.2, z0 + ridge_h + ridge_p + 0.2],
-                     [1.5, z0 + ridge_h + ridge_p + 0.2],
-                     [1.5, z0 + 0.5]]);
-}
-
-// The upper half's ridges; mirror([0, 0, 1]) gives the lower half's
-module grip_ridges() {
-    if (grip_ridge_top) grip_ridge_top();
-    if (grip_ridge_end) grip_ridge_end();
-}
-
-// -----------------------------------------------------------------------------
 // Hinge
 // -----------------------------------------------------------------------------
 // Axis along X at Z = 0, just outside the top-arc apex. Knuckles 0 and 2 belong
@@ -751,7 +675,6 @@ module lower_half_snap() {
                 for (l = snap_latches) latch_pad(l);
                 below_parting();
             }
-            mirror([0, 0, 1]) grip_ridges();
         }
         for (l = snap_latches) latch_pocket(l);
     }
@@ -767,7 +690,6 @@ module lower_half_hinge() {
                 for (l = hinge_latches) latch_pad(l, hinge_latch_swing);
                 below_parting();
             }
-            mirror([0, 0, 1]) grip_ridges();
         }
         knuckle_clearance(1);
         pin_hole(tip_up = true);
@@ -861,7 +783,6 @@ module upper_with_latches(ls, swing = 0) {
 
 module upper_half_snap() {
     upper_with_latches(snap_latches);
-    grip_ridges();
 }
 
 module upper_half_hinge() {
@@ -869,7 +790,6 @@ module upper_half_hinge() {
         union() {
             upper_with_latches(hinge_latches, hinge_latch_swing);
             knuckle(1, 1);
-            grip_ridges();
         }
         knuckle_clearance(0);
         knuckle_clearance(2);
