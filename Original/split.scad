@@ -30,10 +30,12 @@
 //           pair (glued, flush with the seam face), plus the press-fit tongue
 //           without ribs as a shear locator.
 //
-// Logo:     B3D_Labs.svg debossed into the upper half's flat outer face.
 // KIA logo: the base model engraves it 0.2 mm deep in the lower half's outer
 //           face; it is cut kia_depth deep, and colour_part = "kia" gives the
 //           flush inlay that fills it, for a second colour.
+// Logo:     B3D_Labs.svg, small, cut logo_depth into the upper half's outer
+//           face directly behind the KIA logo; on the upper half,
+//           colour_part = "kia" gives its inlay, so both logos share a colour.
 //
 // Printing: Print both halves outer face down (flip the upper half 180 deg in
 //           the slicer). Print part = "coupon" first; it tests the selected
@@ -47,8 +49,8 @@ part = "assembly"; // ["assembly", "exploded", "upper", "lower", "coupon"]
 // Select joint mechanism
 joint_style = "snap"; // ["press_fit", "snap", "hinge", "magnet", "flat"]
 
-// Two-colour KIA logo: the half ("all" and "body" are the same), or the
-// flush inlay that fills the lower half's KIA logo (the upper has none)
+// Two-colour logos: the half ("all" and "body" are the same), or the flush
+// inlay that fills its logo (KIA on the lower half, B3D Labs on the upper)
 colour_part = "all"; // ["all", "body", "kia"]
 
 /* [Joint Parameters] */
@@ -95,14 +97,17 @@ notch_h = 1.0;
 notch_d = 0.8;
 
 /* [Logo] */
-// Deboss the B3D Labs logo into the upper half's outer face
+// Inlay the B3D Labs logo into the upper half's outer face
 logo = true;
 logo_file = "B3D_Labs.svg";
-// Logo height along Y; width follows the SVG aspect ratio (mm)
-logo_height = 26;
-// Logo centre on the flat face, below the button window (mm)
-logo_center = [21, 27];
-// Engraving depth; the top plate is ~1.7 mm thick (mm)
+// Logo height along Y; width follows the SVG aspect ratio. Its strokes and
+// gaps are ~4.8 % of it, so 9 mm keeps them ~0.43 mm, one nozzle line (mm)
+logo_height = 9;
+// Logo centre: at the KIA logo's height (centre of its Y 5.02-9.95), and
+// like it near the left post: seen from outside, its left edge lines up
+// with the KIA's outer end (X 3.92) on the lower face; 7.68 mm wide (mm)
+logo_center = [7.76, 7.49];
+// Cut depth: 3 layers, the same as kia_depth (mm)
 logo_depth = 0.6;
 
 /* [KIA Logo] */
@@ -819,12 +824,23 @@ module upper_half_press_fit() {
     }
 }
 
-// Logo engraved into the flat outer face (Z = top of the model)
+// B3D Labs logo outline on the upper face
+module logo_2d() {
+    translate(logo_center)
+        resize([0, logo_height], auto = true)
+            import(logo_file, center = true);
+}
+
+// Logo cut logo_depth into the flat outer face (Z = top of the model)
 module logo_cut() {
-    translate([logo_center[0], logo_center[1], face_z - logo_depth])
-        linear_extrude(height = logo_depth + 0.01)
-            resize([0, logo_height], auto = true)
-                import(logo_file, center = true);
+    translate([0, 0, face_z - logo_depth])
+        linear_extrude(height = logo_depth + 0.01) logo_2d();
+}
+
+// Flush inlay that fills logo_cut()
+module logo_inlay() {
+    translate([0, 0, face_z - logo_depth])
+        linear_extrude(height = logo_depth) logo_2d();
 }
 
 // Upper half with wall pads, arm slots and arms for latches ls
@@ -895,9 +911,12 @@ module upper_all() {
     }
 }
 
-// Upper half; it has no KIA logo, so "kia" gives nothing
+// Upper half ("all" or "body"), or its B3D Labs logo inlay ("kia")
 module part_upper(which = colour_part) {
-    if (which != "kia") upper_all();
+    if (which == "kia") {
+        if (logo) logo_inlay();
+    } else
+        upper_all();
 }
 
 // -----------------------------------------------------------------------------
@@ -1080,9 +1099,12 @@ if (part == "upper") {
     color([0.95, 0.95, 0.95, 1.0])
         part_lower("kia");
 
-    color([0.90, 0.45, 0.20, 0.9])
-        translate([0, 0, exploded_offset])
-            part_upper();
+    translate([0, 0, exploded_offset]) {
+        color([0.90, 0.45, 0.20, 0.9])
+            part_upper("body");
+        color([0.95, 0.95, 0.95, 1.0])
+            part_upper("kia");
+    }
 } else {
     // Assembled view
     color([0.20, 0.45, 0.85, 1.0])
@@ -1091,5 +1113,7 @@ if (part == "upper") {
         part_lower("kia");
 
     color([0.90, 0.45, 0.20, 0.9])
-        part_upper();
+        part_upper("body");
+    color([0.95, 0.95, 0.95, 1.0])
+        part_upper("kia");
 }

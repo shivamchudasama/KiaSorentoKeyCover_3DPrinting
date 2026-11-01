@@ -37,7 +37,7 @@
 //           - a full-height cap on the top-left shoulder and a tab on the
 //             right, flush with the outer faces;
 //           - a boot over the open end and its corners, the fob slot left
-//             open, with the logo debossed in its front;
+//             open, with the logo inlaid in its front;
 //           - on both faces a flush central panel in a sunken border, with
 //             stippled grip zones either side and a groove round the window.
 //           colour_part splits each half into the body and an accent (frames,
@@ -45,10 +45,12 @@
 //           single-colour half. Built from split_rugged.scad; changes to
 //           split.scad must be carried into this copy by hand.
 //
-// Logo:     B3D_Labs.svg debossed into the boot on the upper half's face.
 // KIA logo: the base model engraves it 0.2 mm deep in the lower half's outer
 //           face; it is cut kia_depth deep, and colour_part = "kia" gives the
 //           flush inlay that fills it, for a second colour.
+// Logo:     B3D_Labs.svg, small, cut logo_depth into the boot on the upper
+//           half's face behind the KIA logo; on the upper half,
+//           colour_part = "kia" gives its inlay, so both logos share a colour.
 //
 // Printing: Print both halves outer face down (flip the upper half 180 deg in
 //           the slicer). Print part = "coupon" first; it tests the selected
@@ -63,9 +65,9 @@ part = "assembly"; // ["assembly", "exploded", "upper", "lower", "coupon"]
 joint_style = "snap"; // ["press_fit", "snap", "hinge", "magnet", "flat"]
 
 // Colour split for a two-colour print: the black body, the orange accent, the
-// KIA logo inlay in the lower face, or the whole half for a single-colour
-// print. The logo spans the orange boot and latch A's black clip, so only a
-// third colour (e.g. white) reads across both
+// logo inlay (KIA in the lower face, B3D Labs in the upper), or the whole half
+// for a single-colour print. The KIA logo spans the orange boot and latch A's
+// black clip, so only a third colour (e.g. white) reads across both
 colour_part = "all"; // ["all", "body", "accent", "kia"]
 
 /* [Joint Parameters] */
@@ -147,7 +149,7 @@ slot_ramp = 0.578;
 core_in = 0.6;
 accent_cavity = 1.3;
 // Depth of the accent skin on the outer faces under the boot and caps; deeper
-// than logo_depth, so the logo stays in the accent colour (mm)
+// than logo_depth, so the logo's cut stays within the accent (mm)
 skin_d = 1.0;
 // The accent is cut this far past the frames', caps' and boot's ends, and
 // stops this far short of the latch pads and magnet lugs, so no accent face
@@ -175,14 +177,19 @@ groove_w = 0.8;
 groove_d = 0.4;
 
 /* [Logo] */
-// Deboss the B3D Labs logo into the boot on the upper face
+// Inlay the B3D Labs logo into the boot on the upper face
 logo = true;
 logo_file = "B3D_Labs.svg";
-// Logo height along Y; width follows the SVG aspect ratio (mm)
-logo_height = 7;
-// Logo centre on the boot's front (mm)
-logo_center = [21.4, 5.2];
-// Engraving depth; less than skin_d (mm)
+// Logo height along Y; width follows the SVG aspect ratio. Its strokes and
+// gaps are ~4.8 % of it, so 9 mm keeps them ~0.43 mm, one nozzle line (mm)
+logo_height = 9;
+// Logo centre: like the KIA logo near the left post (seen from outside,
+// its left edge lines up with the KIA's outer end, X 3.92), but 1.5 mm
+// below the KIA's centre (Y 7.49), so it stays on the boot (top edge
+// Y 11) instead of reaching into the sunken border, where its inlay
+// would stand proud. Like the KIA, it spans the boot and latch A's clip (mm)
+logo_center = [7.76, 6.0];
+// Cut depth: 3 layers, the same as kia_depth; less than skin_d (mm)
 logo_depth = 0.6;
 
 /* [KIA Logo] */
@@ -1235,12 +1242,23 @@ module upper_half_press_fit() {
     }
 }
 
-// Logo engraved into the flat outer face (Z = top of the model)
+// B3D Labs logo outline on the upper face
+module logo_2d() {
+    translate(logo_center)
+        resize([0, logo_height], auto = true)
+            import(logo_file, center = true);
+}
+
+// Logo cut logo_depth into the flat outer face (Z = top of the model)
 module logo_cut() {
-    translate([logo_center[0], logo_center[1], face_z - logo_depth])
-        linear_extrude(height = logo_depth + 0.01)
-            resize([0, logo_height], auto = true)
-                import(logo_file, center = true);
+    translate([0, 0, face_z - logo_depth])
+        linear_extrude(height = logo_depth + 0.01) logo_2d();
+}
+
+// Flush inlay that fills logo_cut()
+module logo_inlay() {
+    translate([0, 0, face_z - logo_depth])
+        linear_extrude(height = logo_depth) logo_2d();
 }
 
 // Upper half with wall pads, arm slots and arms for latches ls
@@ -1314,9 +1332,11 @@ module upper_all() {
     }
 }
 
-// The upper half has no KIA logo, so "kia" gives nothing
+// Body, accent or whole upper half, or its B3D Labs logo inlay ("kia")
 module part_upper(which = colour_part) {
-    if (which != "kia")
+    if (which == "kia") {
+        if (logo) logo_inlay();
+    } else
         colour_split(which) upper_all();
 }
 
@@ -1495,7 +1515,7 @@ if (part == "upper") {
     part_coupon();
 } else {
     // Assembled or exploded view (lower on the bed, upper lifted), black body,
-    // orange accent and white KIA logo
+    // orange accent and white logos
     for (h = [0, 1])
         translate([0, 0, part == "exploded" ? h * exploded_offset : 0])
             for (w = ["body", "accent", "kia"])

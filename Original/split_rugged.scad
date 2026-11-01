@@ -42,14 +42,16 @@
 //             and side grip lines on the upper face, a hexagonal emblem and
 //             the same grooves on the lower face.
 //           colour_part splits each half into a grey body and an orange
-//           accent (the band, plus the front logo as a flush inlay) for a
-//           two-colour (AMS) print; "all" is the single-colour half.
+//           accent (the band) for a two-colour (AMS) print; "all" is the
+//           single-colour half.
 //           Changes to split.scad must be carried into this copy by hand.
 //
-// Logo:     B3D_Labs.svg debossed into the upper half's flat outer face.
 // KIA logo: the base model engraves it 0.2 mm deep in the lower half's outer
 //           face; it is cut kia_depth deep, and colour_part = "kia" gives the
 //           flush inlay that fills it, for a second colour.
+// Logo:     B3D_Labs.svg, small, cut logo_depth into the upper half's outer
+//           face directly behind the KIA logo; on the upper half,
+//           colour_part = "kia" gives its inlay, so both logos share a colour.
 //
 // Printing: Print both halves outer face down (flip the upper half 180 deg in
 //           the slicer). Print part = "coupon" first; it tests the selected
@@ -64,8 +66,8 @@ part = "assembly"; // ["assembly", "exploded", "upper", "lower", "coupon"]
 joint_style = "snap"; // ["press_fit", "snap", "hinge", "magnet", "flat"]
 
 // Colour split for a two-colour print: the grey body, the orange accent, the
-// KIA logo inlay in the lower face (orange, like the accent), or the whole
-// half for a single-colour print
+// logo inlay (KIA in the lower face, B3D Labs in the upper; orange, like the
+// accent), or the whole half for a single-colour print
 colour_part = "all"; // ["all", "body", "accent", "kia"]
 
 /* [Joint Parameters] */
@@ -155,8 +157,9 @@ feature_d = 0.6;
 bezel_gap = 1.4;
 // Panel outlines [x0, y0, x1, y1] on the upper and lower faces, and their
 // corner chamfer. The lower one starts above the wordmark the base model
-// already has engraved there (X 3.9-24, Y 5-10) (mm)
-panel = [7.5, 5, 35.5, 48.5];
+// already has engraved there (X 3.9-24, Y 5-10), the upper one above the
+// B3D Labs logo (X 3.9-11.6, Y 3-12) (mm)
+panel = [7.5, 14, 35.5, 48.5];
 panel_lower = [7.5, 12, 35.5, 48.5];
 panel_chamfer = 3;
 // Three slots across the panel: X span, centre Ys and width (mm)
@@ -173,18 +176,18 @@ emblem_center = [21.4, 27];
 emblem_r = 10.5;
 
 /* [Logo] */
-// Deboss the B3D Labs logo into the upper half's outer face
+// Inlay the B3D Labs logo into the upper half's outer face
 logo = true;
 logo_file = "B3D_Labs.svg";
-// Logo height along Y; width follows the SVG aspect ratio (mm)
-logo_height = 13;
-// Logo centre on the flat face: low on the panel, below the slots (mm)
-logo_center = [21.5, 15];
-// Engraving depth; the top plate is ~1.7 mm thick (mm)
+// Logo height along Y; width follows the SVG aspect ratio. Its strokes and
+// gaps are ~4.8 % of it, so 9 mm keeps them ~0.43 mm, one nozzle line (mm)
+logo_height = 9;
+// Logo centre: at the KIA logo's height (centre of its Y 5.02-9.95), and
+// like it near the left post: seen from outside, its left edge lines up
+// with the KIA's outer end (X 3.92) on the lower face; 7.68 mm wide (mm)
+logo_center = [7.76, 7.49];
+// Cut depth: 3 layers, the same as kia_depth (mm)
 logo_depth = 0.6;
-// Two-colour print: the accent fills the logo flush, so it prints in the
-// accent colour in the first layers
-logo_inlay = true;
 
 /* [KIA Logo] */
 // The base model engraves the KIA logo 0.2 mm deep in the lower face; it is
@@ -990,24 +993,17 @@ module face_styling_cut(s) {
         if (s > 0) slots_2d(); else emblem_2d();
 }
 
-// Body or accent of a half; the accent adds the flush logo inlay if asked
-module colour_split(which, inlay = false) {
+// Body or accent of a half
+module colour_split(which) {
     if (which == "body")
         difference() {
             children();
             accent_zone();
         }
     else if (which == "accent")
-        union() {
-            intersection() {
-                children();
-                accent_zone();
-            }
-            if (inlay)
-                intersection() {
-                    logo_cut();
-                    base_model();
-                }
+        intersection() {
+            children();
+            accent_zone();
         }
     else
         children();
@@ -1167,12 +1163,23 @@ module upper_half_press_fit() {
     }
 }
 
-// Logo engraved into the flat outer face (Z = top of the model)
+// B3D Labs logo outline on the upper face
+module logo_2d() {
+    translate(logo_center)
+        resize([0, logo_height], auto = true)
+            import(logo_file, center = true);
+}
+
+// Logo cut logo_depth into the flat outer face (Z = top of the model)
 module logo_cut() {
-    translate([logo_center[0], logo_center[1], face_z - logo_depth])
-        linear_extrude(height = logo_depth + 0.01)
-            resize([0, logo_height], auto = true)
-                import(logo_file, center = true);
+    translate([0, 0, face_z - logo_depth])
+        linear_extrude(height = logo_depth + 0.01) logo_2d();
+}
+
+// Flush inlay that fills logo_cut()
+module logo_inlay() {
+    translate([0, 0, face_z - logo_depth])
+        linear_extrude(height = logo_depth) logo_2d();
 }
 
 // Upper half with wall pads, arm slots and arms for latches ls
@@ -1246,10 +1253,12 @@ module upper_all() {
     }
 }
 
-// The upper half has no KIA logo, so "kia" gives nothing
+// Body, accent or whole upper half, or its B3D Labs logo inlay ("kia")
 module part_upper(which = colour_part) {
-    if (which != "kia")
-        colour_split(which, logo && logo_inlay) upper_all();
+    if (which == "kia") {
+        if (logo) logo_inlay();
+    } else
+        colour_split(which) upper_all();
 }
 
 // -----------------------------------------------------------------------------
@@ -1427,7 +1436,7 @@ if (part == "upper") {
     part_coupon();
 } else {
     // Assembled or exploded view (lower on the bed, upper lifted), grey body,
-    // orange accent and KIA logo
+    // orange accent and logos
     for (h = [0, 1])
         translate([0, 0, part == "exploded" ? h * exploded_offset : 0])
             for (w = ["body", "accent", "kia"])
