@@ -47,6 +47,9 @@
 //           Changes to split.scad must be carried into this copy by hand.
 //
 // Logo:     B3D_Labs.svg debossed into the upper half's flat outer face.
+// KIA logo: the base model engraves it 0.2 mm deep in the lower half's outer
+//           face; it is cut kia_depth deep, and colour_part = "kia" gives the
+//           flush inlay that fills it, for a second colour.
 //
 // Printing: Print both halves outer face down (flip the upper half 180 deg in
 //           the slicer). Print part = "coupon" first; it tests the selected
@@ -60,9 +63,10 @@ part = "assembly"; // ["assembly", "exploded", "upper", "lower", "coupon"]
 // Select joint mechanism (the rugged styling covers snap, hinge and magnet)
 joint_style = "snap"; // ["press_fit", "snap", "hinge", "magnet", "flat"]
 
-// Colour split for a two-colour print: the grey body, the orange accent, or
-// the whole half for a single-colour print
-colour_part = "all"; // ["all", "body", "accent"]
+// Colour split for a two-colour print: the grey body, the orange accent, the
+// KIA logo inlay in the lower face (orange, like the accent), or the whole
+// half for a single-colour print
+colour_part = "all"; // ["all", "body", "accent", "kia"]
 
 /* [Joint Parameters] */
 // Minimum wall thickness at the joint; thinner posts are thickened outward (mm)
@@ -181,6 +185,11 @@ logo_depth = 0.6;
 // Two-colour print: the accent fills the logo flush, so it prints in the
 // accent colour in the first layers
 logo_inlay = true;
+
+/* [KIA Logo] */
+// The base model engraves the KIA logo 0.2 mm deep in the lower face; it is
+// cut this deep instead, and the "kia" part fills it flush (mm)
+kia_depth = 0.6;
 
 /* [Snap Latches] */
 // Arm width along the wall (mm)
@@ -345,6 +354,10 @@ ring_probe_z = 5;
 
 // Z of the flat outer faces (top = +face_z, bottom = -face_z), read from the STL
 face_z = 10.302;
+
+// Box round the KIA logo engraved in the lower face (X 3.92-23.99,
+// Y 5.02-9.95), read from the STL
+kia_box = [[3.5, 4.5], [24.5, 10.5]];
 
 // Set true inside the coupons: latch strips use a straight wall along X
 $coupon = false;
@@ -1069,6 +1082,31 @@ module lower_half_magnet() {
     }
 }
 
+// KIA logo outline: the holes the engraving leaves in the lower face, 0.1 mm
+// inside it, grown 0.02 mm (rounded) so the deeper cut never shares a wall
+// with the engraving
+module kia_2d() {
+    offset(r = 0.02)
+        difference() {
+            translate(kia_box[0]) square(kia_box[1] - kia_box[0]);
+            projection(cut = true)
+                translate([0, 0, face_z - 0.1])
+                    base_model();
+        }
+}
+
+// KIA logo cut kia_depth into the lower face
+module kia_cut() {
+    translate([0, 0, -face_z - 0.01])
+        linear_extrude(height = kia_depth + 0.01) kia_2d();
+}
+
+// Flush inlay that fills kia_cut()
+module kia_inlay() {
+    translate([0, 0, -face_z])
+        linear_extrude(height = kia_depth) kia_2d();
+}
+
 module lower_all() {
     difference() {
         if (joint_style == "press_fit") {
@@ -1083,11 +1121,16 @@ module lower_all() {
             lower_half_flat();
         }
         if (face_styling) face_styling_cut(-1);
+        kia_cut();
     }
 }
 
+// Body, accent or whole lower half, or its KIA logo inlay ("kia")
 module part_lower(which = colour_part) {
-    colour_split(which) lower_all();
+    if (which == "kia")
+        kia_inlay();
+    else
+        colour_split(which) lower_all();
 }
 
 // -----------------------------------------------------------------------------
@@ -1192,8 +1235,10 @@ module upper_all() {
     }
 }
 
+// The upper half has no KIA logo, so "kia" gives nothing
 module part_upper(which = colour_part) {
-    colour_split(which, logo && logo_inlay) upper_all();
+    if (which != "kia")
+        colour_split(which, logo && logo_inlay) upper_all();
 }
 
 // -----------------------------------------------------------------------------
@@ -1364,11 +1409,11 @@ if (part == "upper") {
 } else if (part == "coupon") {
     part_coupon();
 } else {
-    // Assembled or exploded view (lower on the bed, upper lifted), grey body
-    // and orange accent
+    // Assembled or exploded view (lower on the bed, upper lifted), grey body,
+    // orange accent and KIA logo
     for (h = [0, 1])
         translate([0, 0, part == "exploded" ? h * exploded_offset : 0])
-            for (w = ["body", "accent"])
+            for (w = ["body", "accent", "kia"])
                 color(w == "body" ? [0.36, 0.38, 0.41, 1.0] : [0.95, 0.45, 0.10, 1.0])
                     if (h == 0) part_lower(w); else part_upper(w);
 }

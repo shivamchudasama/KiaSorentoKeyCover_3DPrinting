@@ -10,4 +10,4 @@ include <../Original/split_rugged.scad>
 /* [Render Options] */
 part = "assembly"; // ["assembly", "exploded", "upper", "lower", "coupon"]
 joint_style = "magnet";
-colour_part = "all"; // ["all", "body", "accent"]
+colour_part = "all"; // ["all", "body", "accent", "kia"]

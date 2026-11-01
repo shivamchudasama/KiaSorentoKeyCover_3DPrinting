@@ -31,6 +31,9 @@
 //           without ribs as a shear locator.
 //
 // Logo:     B3D_Labs.svg debossed into the upper half's flat outer face.
+// KIA logo: the base model engraves it 0.2 mm deep in the lower half's outer
+//           face; it is cut kia_depth deep, and colour_part = "kia" gives the
+//           flush inlay that fills it, for a second colour.
 //
 // Printing: Print both halves outer face down (flip the upper half 180 deg in
 //           the slicer). Print part = "coupon" first; it tests the selected
@@ -43,6 +46,10 @@ part = "assembly"; // ["assembly", "exploded", "upper", "lower", "coupon"]
 
 // Select joint mechanism
 joint_style = "snap"; // ["press_fit", "snap", "hinge", "magnet", "flat"]
+
+// Two-colour KIA logo: the half ("all" and "body" are the same), or the
+// flush inlay that fills the lower half's KIA logo (the upper has none)
+colour_part = "all"; // ["all", "body", "kia"]
 
 /* [Joint Parameters] */
 // Minimum wall thickness at the joint; thinner posts are thickened outward (mm)
@@ -97,6 +104,11 @@ logo_height = 26;
 logo_center = [21, 27];
 // Engraving depth; the top plate is ~1.7 mm thick (mm)
 logo_depth = 0.6;
+
+/* [KIA Logo] */
+// The base model engraves the KIA logo 0.2 mm deep in the lower face; it is
+// cut this deep instead, and the "kia" part fills it flush (mm)
+kia_depth = 0.6;
 
 /* [Snap Latches] */
 // Arm width along the wall (mm)
@@ -230,6 +242,10 @@ ring_probe_z = 5;
 
 // Z of the flat outer faces (top = +face_z, bottom = -face_z), read from the STL
 face_z = 10.302;
+
+// Box round the KIA logo engraved in the lower face (X 3.92-23.99,
+// Y 5.02-9.95), read from the STL
+kia_box = [[3.5, 4.5], [24.5, 10.5]];
 
 // Set true inside the coupons: latch strips use a straight wall along X
 $coupon = false;
@@ -719,18 +735,54 @@ module lower_half_magnet() {
     }
 }
 
-module part_lower() {
-    if (joint_style == "press_fit") {
-        lower_half_press_fit();
-    } else if (joint_style == "snap") {
-        lower_half_snap();
-    } else if (joint_style == "hinge") {
-        lower_half_hinge();
-    } else if (joint_style == "magnet") {
-        lower_half_magnet();
-    } else {
-        lower_half_flat();
+// KIA logo outline: the holes the engraving leaves in the lower face, 0.1 mm
+// inside it, grown 0.02 mm (rounded) so the deeper cut never shares a wall
+// with the engraving
+module kia_2d() {
+    offset(r = 0.02)
+        difference() {
+            translate(kia_box[0]) square(kia_box[1] - kia_box[0]);
+            projection(cut = true)
+                translate([0, 0, face_z - 0.1])
+                    base_model();
+        }
+}
+
+// KIA logo cut kia_depth into the lower face
+module kia_cut() {
+    translate([0, 0, -face_z - 0.01])
+        linear_extrude(height = kia_depth + 0.01) kia_2d();
+}
+
+// Flush inlay that fills kia_cut()
+module kia_inlay() {
+    translate([0, 0, -face_z])
+        linear_extrude(height = kia_depth) kia_2d();
+}
+
+module lower_all() {
+    difference() {
+        if (joint_style == "press_fit") {
+            lower_half_press_fit();
+        } else if (joint_style == "snap") {
+            lower_half_snap();
+        } else if (joint_style == "hinge") {
+            lower_half_hinge();
+        } else if (joint_style == "magnet") {
+            lower_half_magnet();
+        } else {
+            lower_half_flat();
+        }
+        kia_cut();
     }
+}
+
+// Lower half ("all" or "body"), or its KIA logo inlay ("kia")
+module part_lower(which = colour_part) {
+    if (which == "kia")
+        kia_inlay();
+    else
+        lower_all();
 }
 
 // -----------------------------------------------------------------------------
@@ -815,7 +867,7 @@ module upper_half_magnet() {
     }
 }
 
-module part_upper() {
+module upper_all() {
     difference() {
         if (joint_style == "press_fit") {
             upper_half_press_fit();
@@ -830,6 +882,11 @@ module part_upper() {
         }
         if (logo) logo_cut();
     }
+}
+
+// Upper half; it has no KIA logo, so "kia" gives nothing
+module part_upper(which = colour_part) {
+    if (which != "kia") upper_all();
 }
 
 // -----------------------------------------------------------------------------
@@ -1002,7 +1059,9 @@ if (part == "upper") {
 } else if (part == "exploded") {
     // Exploded view: Lower on bed, Upper elevated above
     color([0.20, 0.45, 0.85, 1.0])
-        part_lower();
+        part_lower("body");
+    color([0.95, 0.95, 0.95, 1.0])
+        part_lower("kia");
 
     color([0.90, 0.45, 0.20, 0.9])
         translate([0, 0, exploded_offset])
@@ -1010,7 +1069,9 @@ if (part == "upper") {
 } else {
     // Assembled view
     color([0.20, 0.45, 0.85, 1.0])
-        part_lower();
+        part_lower("body");
+    color([0.95, 0.95, 0.95, 1.0])
+        part_lower("kia");
 
     color([0.90, 0.45, 0.20, 0.9])
         part_upper();

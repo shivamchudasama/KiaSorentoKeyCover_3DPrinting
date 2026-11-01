@@ -39,6 +39,16 @@ A second styled version, also for every joint and also two-colour (black and ora
 
 Everything stays flush with the outer faces, so both halves still print flat, face down, without supports.
 
+## KIA logo in colour
+
+The KIA logo on the back (the lower half's outer face) is cut 0.6 mm deep, 3 layers at 0.2 mm, in every design. Each lower half has a matching `_lower_kia.stl` that fills it flush, so the logo prints in its own colour:
+
+- **Plain and grip-ridge:** any second colour.
+- **Rugged:** orange suits it. That's the accent filament, so it needs no third colour.
+- **Trail:** the logo lies partly on the orange boot and partly on latch A's black clip. Only a third colour (white, say) reads across both. With two colours, black shows only where the logo crosses the boot.
+
+Without the `_kia` part, the logo is simply a 0.6 mm deboss.
+
 ## Files
 
 Each design has its own folder; the shared source lives in `Original/`.
@@ -49,6 +59,7 @@ Each design has its own folder; the shared source lives in `Original/`.
 | `Snap/`, `Hinge/`, `Magnet/` | `<joint>_ridge_*`: an experimental variant with grip ridges for pulling the halves apart: round the top arc and along the open end (the hinge, pinned at the top arc, has only the open-end pair) |
 | `Snap/`, `Hinge/`, `Magnet/` | `<joint>_rugged_{upper,lower}.stl` (grey body) and `<joint>_rugged_{upper,lower}_accent.stl` (orange band and logo inlay): the rugged variant. `<joint>_rugged_assembly.glb`: its two-colour preview |
 | `Snap/`, `Hinge/`, `Magnet/` | `<joint>_trail_{upper,lower}.stl` (black body), `<joint>_trail_{upper,lower}_accent.stl` (orange frames, cap, tab and boot) and `<joint>_trail_assembly.glb`: the trail variant |
+| `Snap/`, `Hinge/`, `Magnet/` | `<joint>_lower_kia.stl`, `<joint>_{ridge,rugged,trail}_lower_kia.stl`: the KIA logo inlay for each lower half (see **KIA logo in colour**). The assembly previews show it in colour |
 | `Split/` | `{upper,lower}_flat.stl`: an earlier plain split with no joint (and no logo) |
 | `Original/` | `split.scad`: the parametric source for every design. `split_grip_ridge.scad`, `split_rugged.scad` and `split_trail.scad`: its grip-ridge, rugged and trail copies. `from_openscad.stl`: the unsplit base case the sources build on. `B3D_Labs.svg`: the logo debossed into the upper half. `digital_only.*`: the earlier step that removed the mechanical-key slot |
 
@@ -72,7 +83,8 @@ Each design folder also has a small `.scad` file (for example `Snap/snap.scad`) 
 - **Rugged and trail variants, two colours:** load each half's body STL and its `_accent` STL together. In Bambu Studio, when asked whether to load them as a single object with multiple parts, answer **yes**. Then give the accent part the second filament. The parts fit together exactly, with no gaps or overlaps. Expect some purge waste:
   - **Rugged:** colour changes happen in the first ~3 layers (logo inlay) and the last ~5 mm of each half (band).
   - **Trail:** the boot's and cap's orange face skin covers the first 5 layers. The boot, cap and window frames then run most of the height, so most layers need a colour change.
-- **One colour:** load the body and accent STLs as one object and print in one filament. Alternatively, export `colour_part = "all"`, which gives the half as one STL; on the rugged variant the logo is then debossed instead of inlaid.
+- **KIA logo in colour:** add the lower half's `_lower_kia.stl` to the same object, as one more part, and give it the logo's filament. On the plain and grip-ridge cases the lower half and the logo are the only parts. The logo's colour changes happen in the first 3 layers only.
+- **One colour:** load the body and accent STLs as one object and print in one filament, leaving out the `_kia` part. The KIA logo is then debossed. Alternatively, export `colour_part = "all"`, which gives the half as one STL; on the rugged variant the front logo is then debossed instead of inlaid.
 
 ## Assembly
 
