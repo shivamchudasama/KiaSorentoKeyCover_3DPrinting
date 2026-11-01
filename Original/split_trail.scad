@@ -193,16 +193,20 @@ kia_depth = 0.6;
 /* [Snap Latches] */
 // Arm width along the wall (mm)
 latch_w = 5;
-// Arm thickness, measured outward from arm_gap off the fob cavity (mm)
-arm_t = 1.2;
+// Arm thickness, measured outward from arm_gap off the fob cavity. 1.2 was
+// too weak to click; 1.6 is ~2.4x stiffer and still flexes 1 mm at ~1.4 %
+// strain across the layer lines (mm)
+arm_t = 1.6;
 // Gap between the arm's inner face and the fob cavity (mm)
 arm_gap = 0.1;
-// Z of the arm tip; the hook sits just above it (mm)
-arm_bottom = -7.6;
+// Z of the arm tip; the hook sits just above it. The notch is cut into the
+// lower floor under the cavity's rounded edge (which starts at |Z| ~5.7);
+// at -7.6 the lip over the hook was only 0.2-0.6 mm thick, now ~0.8-1 (mm)
+arm_bottom = -8.45;
 // Z where the arm's outer face starts its 45 deg chamfer into the upper rim (mm)
 arm_root_z = 6;
 // Hook protrusion into the lower rim; the lead-in is 45 deg (mm)
-hook_d = 0.6;
+hook_d = 1.0;
 // Flat land between the lead-in and the retaining face (mm)
 hook_land = 0.2;
 // Retaining face: 45-60 = pulls apart by hand. The pockets are closed to the
@@ -210,16 +214,22 @@ hook_land = 0.2;
 hook_return_angle = 60;
 // Side clearance between arm and pocket (mm)
 latch_clearance = 0.15;
-// Vertical play between hook and notch (mm)
-latch_z_play = 0.05;
+// Vertical play between hook and notch. Negative = preload: the hook rests
+// on the notch's retaining face with the arm still sprung (0.1 mm here holds
+// it ~0.17 mm out), so the arm pulls the seam shut, and layer rounding or
+// overhang sag up to ~0.4 mm is taken up on the face instead of leaving a
+// gap. A positive play smaller than a layer jammed the hooks (mm)
+latch_z_play = -0.1;
 // Room outward of the arm for it to flex over the hook (mm)
 arm_flex = hook_d + 0.1;
 // Outer skin left over the pocket; the wall is thickened outward to fit it (mm)
 latch_skin = 0.8;
 // Pad wall beside the pocket at each end (mm)
 latch_side = 1.0;
-// The arm is free of the upper wall up to this Z (the side windows' top) (mm)
-arm_free_z = 4.2;
+// The arm is free of the upper wall up to this Z: 1.2 mm past the side
+// windows' top (4.2), just short of the cavity's rounded edge, for a longer,
+// lower-strain arm. The pad closes the slot to the outside (mm)
+arm_free_z = 5.4;
 // Fingernail slot beside the coupon arm, for levering it out; 0 = none (mm)
 nail_w = 1.2;
 
@@ -650,7 +660,8 @@ module latch_slot(l) latch_frame(l) {
 module latch_pocket(l, swing = 0, ang = hook_return_angle) latch_frame(l) {
     w = latch_width(l) + 2 * latch_clearance + swing;
     s = swing_shift(l, swing);
-    notch_top = hook_top + latch_z_play;
+    // A flat (90 deg) face can't take preload: give it play instead
+    notch_top = hook_top + (ang >= 90 ? max(latch_z_play, 0.1) : latch_z_play);
     translate([0, 0, pocket_bottom])
         linear_extrude(height = -pocket_bottom + 0.01)
             latch_strip_2d(l, arm_gap - latch_clearance, $coupon ? 5 : pocket_outer, w, s);
@@ -1376,11 +1387,17 @@ module part_coupon_press_fit() {
 // Snap: straight 14 mm wall section, rim and end posts as on the case. Modelled
 // assembled (seam at Z = 0), then laid out for printing; the lower carries the
 // retaining-face angle engraved on its rim.
+// Lower block: 1.2 mm floor under the pocket, up to the side windows' bottom
+coupon_snap_base = pocket_bottom - 1.2;
+// Upper block: from the arm's free length up, 4.8 mm tall
+coupon_snap_top = arm_free_z + 4.8;
+
 module coupon_snap_lower(ang) {
-    translate([0, 0, 9])
+    translate([0, 0, -coupon_snap_base])
     difference() {
         union() {
-            translate([-7, 0, -9]) cube([14, 6, 4.8]);
+            translate([-7, 0, coupon_snap_base])
+                cube([14, 6, -4.2 - coupon_snap_base]);
             for (x = [-7, 5]) translate([x, 0, -4.21]) cube([2, 1.7, 4.21]);
         }
         let($coupon = true) latch_pocket([0, 0, 0], 0, ang);
@@ -1391,11 +1408,11 @@ module coupon_snap_lower(ang) {
 }
 
 module coupon_snap_upper(ang) {
-    translate([0, 0, 9])
+    translate([0, 0, coupon_snap_top])
     mirror([0, 0, 1])
     union() {
-        translate([-7, 0, 4.2]) cube([14, 6, 4.8]);
-        for (x = [-7, 5]) translate([x, 0, 0]) cube([2, 1.7, 4.21]);
+        translate([-7, 0, arm_free_z]) cube([14, 6, coupon_snap_top - arm_free_z]);
+        for (x = [-7, 5]) translate([x, 0, 0]) cube([2, 1.7, arm_free_z + 0.01]);
         let($coupon = true) latch_arm([0, 0, 0], ang);
     }
 }
