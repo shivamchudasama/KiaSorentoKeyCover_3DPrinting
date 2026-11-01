@@ -2,11 +2,7 @@
 
 ## Routine
 
-After a **significant change** — one that makes something in this file wrong or incomplete (files added/renamed/reorganized, a new convention adopted, git/LFS setup changed) — say which section is affected and ask:
-
-> Would you like to modify `CLAUDE.md` accordingly?
-
-Do not ask on turns that change nothing here (questions, inspection, small edits that fit existing conventions). Keep this file lean — only what's needed to understand the repo.
+**Just before every commit**, bring this file up to date with what is being committed (files added/renamed/reorganized, a new convention or parameter rule, git/LFS setup or the LFS figures below) and include it in the same commit. If nothing here has gone stale, leave it unchanged. Keep this file lean — only what's needed to understand the repo.
 
 ## Repository nature
 
@@ -34,7 +30,7 @@ One folder for the shared source and one per design (plus a local `.codex/` tool
 - Key measurements: the side windows span Z −4.2 … +4.2, leaving four posts 0.7–1.6 mm thick across the seam, and no wall is thicker than ~2 mm. Fob cavity Z ±8.65. The open end (Y = 0) has no wall in the window band, and a fob slot at |Z| < 5.6. This is why friction joints fail here and why the magnets need external lugs.
 - **The side windows expose the fob's buttons — never cover them.** Latches go on the wall posts only (Z = 0 slice: left post Y 0–16.3, right lower post Y 0–30, top-arc post from Y 48.9 on the left round to X 28, right upper post Y 57.4–64.6). Check every change with the window-overlap test.
 - Latches are `[x, y, outward normal angle]` or `[x, y, angle, arm width]`: a point on the cavity line and its wall normal. Each latch is built in its own `latch_frame()` with axis-aligned boxes and rotated once in 3D; rotating a box in 2D leaves non-manifold slivers.
-- Each latch gets a **wall pad** (`latch_pad()`) that thickens the wall outward to `pad_t`, so the pocket is enclosed with `latch_skin` left outside it. The pad starts 0.2 mm inside the wall to avoid coincident faces, and chamfers 45° into the face plates. Hooks release by pulling (`hook_return_angle` = 60°); there is no nail slot on the case.
+- Each latch gets a **wall pad** (`latch_pad()`) that thickens the wall outward to `pad_t`, so the pocket is enclosed with `latch_skin` left outside it. The pad starts 0.2 mm inside the wall to avoid coincident faces, and chamfers 45° into the face plates. Hooks release by pulling (`hook_return_angle` = 60°); there is no nail slot on the case. The hooks are **preloaded** (`latch_z_play` = −0.1): assembled, each hook overlaps its notch's retaining face by 0.1 mm, so the sprung arm pulls the seam shut. A positive play smaller than a layer jammed the hooks; 90° faces still get play.
 - Latch features are strips between two `cavity_2d()` offsets, cut to a box. In the coupons, `$coupon = true` swaps in a straight wall along X and adds an open pocket with a nail slot.
 - Both halves print outer face down, so overhangs get 45° chamfers via `ramp()`.
 - The hinge webs are clipped to their own half (z ≥ 0 for the upper, z ≤ 0 for the lower). A web that crosses the seam sweeps into the other half when the case opens.
@@ -54,7 +50,7 @@ One folder for the shared source and one per design (plus a local `.codex/` tool
 - Checks used so far:
   - every part renders, is watertight, and is a single body (trimesh);
   - window overlap: the side-window volume (convex hull of the posts minus cavity and posts, |Z| < 4.2) intersected with each half adds nothing beyond the slivers next to the posts;
-  - `intersection(){ part_upper(); part_lower(); }` is empty or zero-volume when assembled;
+  - `intersection(){ part_upper(); part_lower(); }` is empty or zero-volume when assembled (snap: apart from the hooks' 0.1 mm preload overlap);
   - lifting the upper half 0.1 mm makes the hooks overlap (the lock is real);
   - shifting it ±0.4 mm in X/Y collides;
   - for the hinge, rotating the upper half about `hinge_axis_y` from 3° to 120° stays empty;
@@ -68,6 +64,6 @@ One folder for the shared source and one per design (plus a local `.codex/` tool
 Public GitHub repo (`origin` = `shivamchudasama/KiaSorentoKeyCover_3DPrinting`), single branch `main`.
 
 - `.gitattributes` routes `*.stl`, `*.3mf`, `*.pdf` and `*.glb` to **Git LFS**. `*.png` stays an ordinary blob by policy. Add any new binary extension there **before** its first commit.
-- The current STL/GLB exports total ~120 MB; with superseded versions, LFS storage is ~160 MB, against the free tier of 1 GB storage / 1 GB monthly bandwidth. Re-exporting one styled variant (body + accent STLs and GLBs for all three joints) writes ~39 MB into LFS; a plain re-export ~18 MB; re-exporting every lower half and GLB (as for the KIA inlay) ~59 MB. Commit exports when a design settles, not on every experiment.
+- The current STL/GLB exports total ~120 MB; with superseded versions, LFS storage is ~230 MB, against the free tier of 1 GB storage / 1 GB monthly bandwidth. Re-exporting one styled variant (body + accent STLs and GLBs for all three joints) writes ~39 MB into LFS; a plain re-export ~18 MB; re-exporting every lower half and GLB (as for the KIA inlay) ~59 MB; a latch change (every snap and hinge export and GLB, all copies) ~68 MB. Commit exports when a design settles, not on every experiment.
 - `.gitignore` excludes `.codex/` (local tool config).
 - README still has a TODO crediting the original base-case model and its licence.
